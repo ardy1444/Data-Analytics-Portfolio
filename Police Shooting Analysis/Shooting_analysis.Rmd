@@ -1,0 +1,144 @@
+---
+title: "Police Gun Dataset Analysis"
+output: pdf_document
+date: "2023-07-24"
+---
+
+## Introduction
+
+This report contains a comprehensive exploratory data analysis of a police gun incident dataset. The primary focus is to analyze factors such as manner of death, armed status, age, gender, race, and geographic distribution.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(gt)
+library(lubridate)
+
+data <- read.csv("/Users/aaradhyakhanduri/Downloads/shootings.csv")
+```
+Racial Distribution in Cities with Most Incidents
+
+We first analyze the racial distribution of the incidents in the top 6 cities with the most incidents.
+
+```{r setup2,echo=FALSE}
+# Find out the top 6 cities with the most incidents for pie chart visualization
+top_cities <- data %>%
+  count(city) %>%
+  top_n(6) %>%
+  pull(city)
+
+# Filter the data to include only the top cities and create a count of incidents for each race in these cities
+filtered_data <- data %>%
+  filter(city %in% top_cities) %>%
+  count(city, race)
+
+# Compute the total number of incidents and percentage for each race in these cities
+filtered_data <- filtered_data %>%
+  group_by(city) %>%
+  mutate(total = sum(n),
+         percentage = n / total)
+
+# Generate the plot
+filtered_data %>%
+  ggplot(aes(x = "", y = percentage, fill = race)) +
+  geom_bar(stat = "identity", width = 1) +
+  geom_text(aes(label = scales::percent(percentage, accuracy = 0.1)), 
+            position = position_stack(vjust = 0.5)) +
+  coord_polar("y", start = 0) +
+  facet_wrap(~ city) +
+  labs(title = "Race Distribution in Top 6 Cities with Most Incidents",
+       subtitle = "Each subplot represents a different city",
+       x = "Race",
+       y = "Percentage") +
+  theme_minimal()
+```
+The pie charts above provide an overview of the racial distribution of police shooting incidents in the six cities with the most recorded incidents. The racial distribution of incidents in these cities can inform strategies for addressing disparities in police encounters.
+
+Trends in Incidents in Top 15 Cities
+
+Next, we analyze the trend of incidents in the top 15 cities from 2015 to November 2019.
+```{r setup1,echo=FALSE}
+# Find out the top 15 cities with the most incidents
+top_cities <- data %>%
+  count(city) %>%
+  top_n(15) %>%
+  pull(city)
+
+# Filter the data to include only the top cities and incidents until November 2019, 
+# extract the year from the date, and count the incidents
+filtered_data <- data %>%
+  filter(city %in% top_cities, date <= as.Date("2019-11-30")) %>%
+  mutate(year = year(date)) %>%
+  count(city, year)
+
+# Generate the plot
+filtered_data %>%
+  ggplot(aes(x = year, y = n, color = city)) +
+  geom_line(size = 1.2) +
+  labs(title = "Trend of Incidents in Top 15 Cities (up to Nov 2019)",
+       subtitle = "Each line represents a different city",
+       x = "Year",
+       y = "Count of Incidents") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(nrow = 3)) # to spread the legend over 3 rows for readability
+```
+Body Camera Analysis in Selected Cities
+
+We are visualizing the use of body cameras during incidents involving individuals armed with anything but a gun. The dataset was filtered to focus on cities with more than ten such incidents up until November 30, 2019. The graph below depicts the number of incidents involving body camera usage, segregated by city.
+
+```{r setup3,echo=FALSE}
+# Load the necessary libraries
+library(dplyr)
+library(ggplot2)
+
+# Filter the data to include only incidents involving individuals armed with anything but a gun
+filtered_data <- data %>%
+  filter(arms_category != "Guns" & date <= as.Date("2019-11-30")) %>%
+  mutate(year = year(date))
+
+# Find cities with more than 10 such incidents
+top_cities <- filtered_data %>%
+  count(city) %>%
+  filter(n > 10) %>%
+  pull(city)
+
+# Filter the data to include only the top cities
+filtered_data <- filtered_data %>%
+  filter(city %in% top_cities)
+
+# Count the incidents by city and body_camera
+table_data <- filtered_data %>%
+  count(city, body_camera)
+
+# Generate the plot
+table_data %>%
+  ggplot(aes(x = city, y = n, fill = body_camera)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Count of Incidents by City and Body Camera Status",
+       subtitle = "Only incidents involving individuals armed with anything but a gun",
+       x = "City",
+       y = "Count of Incidents",
+       fill = "Body Camera Worn") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+Relationship Between Mental Health Illness and Threat Level
+
+```{r setup4,echo=FALSE}
+# Create a count of incidents for each threat level and mental illness status
+filtered_data <- data %>%
+  count(signs_of_mental_illness, threat_level)
+
+# Generate the plot
+filtered_data %>%
+  ggplot(aes(x = threat_level, y = n, fill = signs_of_mental_illness)) +
+  geom_col(position = "dodge") +
+  labs(title = "Relationship between Mental Health Illness and Threat Level",
+       x = "Threat Level",
+       y = "Number of Incidents",
+       fill = "Signs of Mental Illness") +
+  theme_minimal()
+  ```
