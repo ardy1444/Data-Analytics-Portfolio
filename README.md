@@ -25,6 +25,6 @@ I'm always open to collaboration and improving my code. If you have any ideas or
 
 ## :mailbox: Contact Me
 
-Feel free to reach out to me on [LinkedIn](https://www.linkedin.com/in/aaradhya-khanduri-92a1b8133/) or send me an email at your-email@gmail.com. 
+Feel free to reach out to me on [LinkedIn](https://www.linkedin.com/in/aaradhya-khanduri-92a1b8133/). 
 
 Happy exploring! :rocket:
