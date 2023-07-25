@@ -1,0 +1,160 @@
+---
+title: "Police Shooting Analysis by Aaradhya Khanduri"
+output: pdf_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(gt)
+library(lubridate)
+
+data <- read.csv("/Users/aaradhyakhanduri/Downloads/shootings.csv")
+```
+## Introduction
+
+
+This report contains a comprehensive exploratory data analysis of an updated police gun incident dataset. The primary focus is to analyze factors such as manner of death, armed status, age, gender, race, and geographic distribution.
+
+For more information about the dataset- https://www.kaggle.com/datasets/ahsen1330/us-police-shootings/versions/1?resource=download#
+
+## Body Camera Analysis in Selected Cities
+
+We are visualizing the use of body cameras during incidents involving individuals armed with anything but a gun. The dataset was filtered to focus on cities with more than ten such incidents up until November 30, 2019. The graph below depicts the number of incidents involving body camera usage, segregated by city.
+
+```{r setup3,echo=FALSE}
+library(dplyr)
+library(ggplot2)
+filtered_data <- data %>%
+  filter(arms_category != "Guns" & date <= as.Date("2019-11-30")) %>%
+  mutate(year = year(date))
+top_cities <- filtered_data %>%
+  count(city) %>%
+  filter(n > 10) %>%
+  pull(city)
+filtered_data <- filtered_data %>%
+  filter(city %in% top_cities)
+table_data <- filtered_data %>%
+  count(city, body_camera)
+table_data %>%
+  ggplot(aes(x = city, y = n, fill = body_camera)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Count of Incidents by City and Body Camera Status",
+       subtitle = "Only incidents involving individuals armed with anything but a gun",
+       x = "City",
+       y = "Count of Incidents",
+       fill = "Body Camera Worn") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+The bar chart above shows the use of body cameras in incidents involving individuals armed with anything but a gun, in cities with more than 10 such incidents. Here are some insights from the chart:
+
+- In most of the cities, body cameras were not used in the majority of the incidents. This could be due to various reasons such as lack of equipment, policy not requiring their use, or officers not turning them on.
+- Among the cities, Los Angeles and San Francisco had the most incidents where body cameras were used. However, these cities also had the most incidents overall.
+- In cities like Phoenix, Houston, and San Antonio, the use of body cameras was notably low compared to the total number of incidents.
+- The use of body cameras in law enforcement has been associated with reductions in complaints and use of force incidents. The data suggests that there is scope for increasing the use of body cameras, especially in cities with a high number of incidents involving individuals armed with anything but a gun.
+
+
+## Racial Distribution in Cities with Most Incidents
+
+We first analyze the racial distribution of the incidents in the top 6 cities with the most incidents.
+
+```{r setup2,echo=FALSE}
+top_cities <- data %>%
+  count(city) %>%
+  top_n(6) %>%
+  pull(city)
+
+filtered_data <- data %>%
+  filter(city %in% top_cities) %>%
+  count(city, race)
+filtered_data <- filtered_data %>%
+  group_by(city) %>%
+  mutate(total = sum(n),
+         percentage = n / total)
+filtered_data %>%
+  ggplot(aes(x = "", y = percentage, fill = race)) +
+  geom_bar(stat = "identity", width = 1, color = NA) + 
+  geom_text(aes(label = scales::percent(percentage, accuracy = 0.1)),
+            position = position_stack(vjust = 0.5), size = 2) +
+  coord_polar("y", start = 0) +
+  facet_wrap(~ city) +
+  labs(title = "Race Distribution in Top 6 Cities with Most Incidents",
+       subtitle = "Each subplot represents a different city",
+       x = "Race",
+       y = "Percentage") +
+  theme_bw() +
+  scale_fill_brewer(palette = "Set3")
+```
+The pie charts above provide an overview of the racial distribution of police shooting incidents in the six cities with the most recorded incidents. The racial distribution of incidents in these cities can inform strategies for addressing disparities in police encounters.
+
+The bar chart above shows the racial distribution of police shooting incidents in the six cities with the most recorded incidents. The cities are: Los Angeles, Phoenix, Houston, Las Vegas, San Antonio, and Columbus.
+
+Here are some insights from the chart:
+
+- Los Angeles: There is a significant number of incidents involving victims of Hispanic and White race. Incidents involving Black victims are also quite notable.
+- Phoenix: The majority of incidents involved White victims, followed by Hispanic.
+- Houston: Incidents involving Hispanic and Black victims are predominant, with a substantial number involving White victims as well.
+- Las Vegas: The majority of incidents involved White victims, with a significant number involving Black and Hispanic victims.
+- San Antonio: Incidents involving Hispanic victims are most common, followed by White victims.
+- Columbus: The majority of incidents involved Black victims, followed by White.
+
+This distribution can inform strategies for addressing disparities in police encounters. For instance, cities with a high number of incidents involving a particular racial group may want to focus on community policing initiatives, bias training, or other interventions tailored to those communities.
+
+## Trends in Incidents in Top 8 Cities
+
+Next, we analyze the trend of incidents in the top 8 cities from 2015 to November 2019.
+```{r setup1,echo=FALSE}
+top_cities <- data %>%
+  count(city) %>%
+  top_n(8) %>%
+  pull(city)
+filtered_data <- data %>%
+  filter(city %in% top_cities, date <= as.Date("2019-11-30")) %>%
+  mutate(year = year(date)) %>%
+  count(city, year)
+filtered_data %>%
+  ggplot(aes(x = year, y = n, color = city)) +
+  geom_line(size = 1.2) +
+  labs(title = "Trend of Incidents in Top 8 Cities",
+       subtitle = "Each line represents a different city",
+       x = "Year",
+       y = "Count of Incidents") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  guides(colour = guide_legend(nrow = 3)) 
+```
+
+The line chart above shows the trend of incidents in the top 8 cities from 2015 to the most recent year in the data. Here are some insights from the chart:
+
+- In most cities, the number of incidents has decreased over the years. This could be due to various factors, such as changes in law enforcement practices, community initiatives, or demographic shifts.
+- Some cities like Phoenix and Los Angeles have consistently high numbers of incidents across the years, indicating a persistent problem that might require targeted interventions.
+- Other cities like San Antonio and Las Vegas show varying numbers of incidents across the years, suggesting that the factors influencing these incidents might be more complex or variable.
+
+These trends can help inform strategies to reduce the number of these incidents. Cities with a decreasing trend can be studied to understand what measures have been effective, while cities with consistently high numbers can be targeted for interventions.
+
+## Relationship Between Mental Health Illness and Threat Level
+
+```{r setup4,echo=FALSE}
+filtered_data <- data %>%
+  count(signs_of_mental_illness, threat_level)
+filtered_data %>%
+  ggplot(aes(x = threat_level, y = n, fill = signs_of_mental_illness)) +
+  geom_col(position = "dodge") +
+  labs(title = "Relationship between Mental Health Illness and Threat Level",
+       x = "Threat Level",
+       y = "Number of Incidents",
+       fill = "Signs of Mental Illness") +
+  theme_minimal()
+```
+
+-Among the cities, Los Angeles, Phoenix, and Houston had the highest number of incidents involving individuals showing signs of mental illness. However, these cities also had the most incidents overall.
+
+- The proportion of incidents involving individuals showing signs of mental illness varies across cities. For example, it appears to be relatively higher in San Francisco compared to other cities.
+
+This analysis reveals that a significant number of incidents involve individuals who show signs of mental illness. This suggests that mental health is a crucial factor in many of these incidents and highlights the need for improved mental health interventions and resources in these communities.
+
+## Conclusion
+
+In conclusion, this analysis has uncovered several key insights that can guide efforts to prevent police shooting incidents and improve outcomes when they do occur. The factors analyzed - include race, armed status, use of body cameras, and mental illness - all play a significant role in these incidents. By understanding these factors and how they interact, we can inform strategies and policies aimed at reducing the number of incidents and ensuring fair and equitable outcomes when they do occur.
